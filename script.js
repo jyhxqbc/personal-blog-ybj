@@ -1,38 +1,48 @@
 const cfg = window.SITE_CONFIG || {};
-const $ = (s) => document.querySelector(s);
+const $ = (selector) => document.querySelector(selector);
 
 if (cfg.name) {
   $('#profileName').textContent = cfg.name;
   $('#footerName').textContent = cfg.name;
-  document.title = `${cfg.name} | Amazon Ops Blog`;
+  document.title = `${cfg.name} | 亚马逊运营策略与增长笔记`;
 }
 if (cfg.role) $('#profileRole').textContent = cfg.role;
 if (cfg.email) {
   $('#emailLink').href = `mailto:${cfg.email}`;
-  $('#emailLink').textContent = cfg.email === 'your-email@example.com' ? '发送邮件' : cfg.email;
+  $('#emailLink').textContent = cfg.email;
+  $('#emailLink').hidden = false;
 }
 if (cfg.github) $('#githubLink').href = cfg.github;
 $('#year').textContent = new Date().getFullYear();
 
 const themeToggle = $('#themeToggle');
-const savedTheme = localStorage.getItem('theme');
-if (savedTheme === 'light') document.body.classList.add('light');
+// Storage can be unavailable in private browsing or for local files.
+try {
+  if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
+} catch {}
+const syncTheme = () => themeToggle.setAttribute('aria-pressed', String(document.body.classList.contains('dark')));
+syncTheme();
 themeToggle.addEventListener('click', () => {
-  document.body.classList.toggle('light');
-  localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
+  document.body.classList.toggle('dark');
+  syncTheme();
+  try {
+    localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+  } catch {}
 });
 
 const menuBtn = $('#menuBtn');
 const nav = $('#nav');
-menuBtn.addEventListener('click', () => nav.classList.toggle('open'));
-nav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => nav.classList.remove('open')));
-
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add('visible');
-      observer.unobserve(entry.target);
-    }
-  });
-}, { threshold: 0.12 });
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+const closeMenu = () => {
+  nav.classList.remove('open');
+  menuBtn.setAttribute('aria-expanded', 'false');
+  menuBtn.setAttribute('aria-label', '打开菜单');
+};
+menuBtn.addEventListener('click', () => {
+  const open = nav.classList.toggle('open');
+  menuBtn.setAttribute('aria-expanded', String(open));
+  menuBtn.setAttribute('aria-label', open ? '关闭菜单' : '打开菜单');
+});
+nav.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMenu));
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeMenu();
+});
